@@ -27,7 +27,7 @@ hostgroups.each do |group|
   if node['nagios']['multi_environment_monitoring']
     result = search(:node, group['search_query'])
   else
-    result = search(:node, "#{group['search_query']} AND chef_environment:#{node.chef_environment}")
+    result = search(:node, "chef_environment:#{node.chef_environment} AND #{group['search_query']}")
   end
 
   result.each do |n|
