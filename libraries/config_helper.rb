@@ -1,3 +1,27 @@
+#
+# Author:: Sander Botman <sbotman@schubergphilis.com>
+# Cookbook Name:: nagios
+# Library:: config_helper
+#
+# Copyright 2015, Sander Botman
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# rubocop:disable ClassLength
+#
+# This class holds all nagios configuration options.
+#
+
 require 'chef/log'
 
 # Nagios configuration options
@@ -11,16 +35,10 @@ class NagiosConfig
   def config
     result = []
     config_options.each do |item|
-      n = item[:name]
-      r = item[:regex]
-      parse_item(item).each do |v|
-        if Regexp.new(r).match(v)
-          config_item = n + '=' + v
-          result.push(config_item)
-        else
-          Chef::Log.warn("Cannot process: #{item[:name]}, please check your configuration")
-          Chef::Log.warn("Wrong value: #{v}")
-        end
+      name = item[:name]
+      regex = item[:regex]
+      item_parse(item).each do |value|
+        result.push(item_regex_check(name, value, regex))
       end
     end
     result
@@ -28,49 +46,7 @@ class NagiosConfig
 
   private
 
-  def attribute_exists?(name)
-    return true if node['nagios']['conf'].key?(name)
-    false
-  end
-
-  def item_option(item)
-    name = item[:name]
-    return node['nagios']['conf'][name] if attribute_exists?(name)
-    item[:default]
-  end
-
-  def parse_item(item)
-    r = item_option(item)
-    case r
-    when String
-      [r]
-    when Array
-      r
-    else
-      []
-    end
-  end
-
-  def digit
-    '^\d*$'
-  end
-
-  def file
-    '^(\/)?([^\/\0]+(\/)?)+$'
-  end
-
-  def string
-    '.*'
-  end
-
-  def zero_or_one
-    '^[1|0]$'
-  end
-
-  def seconds
-    '^(-1|(\d*)[s]?)$'
-  end
-
+  # rubocop:disable MethodLength
   def config_options
     [
       { name: 'log_file',
@@ -83,7 +59,7 @@ class NagiosConfig
       }, {
         name: 'cfg_dir',
         default: [node['nagios']['config_dir']],
-        regex: file
+        regex: directory
       }, {
         name: 'object_cache_file',
         default: "#{node['nagios']['cache_dir']}/objects.cache",
@@ -103,7 +79,7 @@ class NagiosConfig
       }, {
         name: 'temp_path',
         default: '/tmp',
-        regex: file
+        regex: directory
       }, {
         name: 'status_file',
         default: "#{node['nagios']['cache_dir']}/status.dat",
@@ -111,7 +87,7 @@ class NagiosConfig
       }, {
         name: 'status_update_interval',
         default: '10',
-        regex: digit
+        regex: seconds
       }, {
         name: 'nagios_user',
         default: node['nagios']['user'],
@@ -151,15 +127,15 @@ class NagiosConfig
       }, {
         name: 'log_archive_path',
         default: "#{node['nagios']['log_dir']}/archives",
-        regex: file
+        regex: directory
       }, {
         name: 'check_external_commands',
         default: '1',
         regex: zero_or_one
       }, {
         name: 'command_check_interval',
-        default: '',
-        regex: seconds
+        default: '-1',
+        regex: '^(-1|(\d*)[s]?)$'
       }, {
         name: 'command_file',
         default: "#{node['nagios']['state_dir']}/rw/#{node['nagios']['server']['name']}.cmd",
@@ -191,7 +167,7 @@ class NagiosConfig
       }, {
         name: 'retention_update_interval',
         default: '60',
-        regex: digit
+        regex: minutes
       }, {
         name: 'use_retained_program_state',
         default: '1',
@@ -243,7 +219,7 @@ class NagiosConfig
       }, {
         name: 'sleep_time',
         default: '1',
-        regex: digit
+        regex: seconds
       }, {
         name: 'service_inter_check_delay_method',
         default: 's',
@@ -251,7 +227,7 @@ class NagiosConfig
       }, {
         name: 'max_service_check_spread',
         default: '5',
-        regex: digit
+        regex: minutes
       }, {
         name: 'service_interleave_factor',
         default: 's',
@@ -263,31 +239,31 @@ class NagiosConfig
       }, {
         name: 'check_result_reaper_frequency',
         default: '10',
-        regex: digit
+        regex: seconds
       }, {
         name: 'max_check_result_reaper_time',
         default: '30',
-        regex: digit
+        regex: seconds
       }, {
         name: 'check_result_path',
         default: "#{node['nagios']['state_dir']}/spool/checkresults",
-        regex: file
+        regex: directory
       }, {
         name: 'max_check_result_file_age',
         default: '3600',
-        regex: digit
+        regex: seconds
       }, {
         name: 'host_inter_check_delay_method',
         default: 's',
-        regex: '^(s|n|d|\d*)$'
+        regex: '^(s|n|d|\d*)$' # We might need to improve the regex.
       }, {
         name: 'max_host_check_spread',
         default: '5',
-        regex: digit
+        regex: minutes
       }, {
         name: 'interval_length',
         default: '60',
-        regex: digit
+        regex: seconds
       }, {
         name: 'auto_reschedule_checks',
         default: '0',
@@ -295,11 +271,11 @@ class NagiosConfig
       }, {
         name: 'auto_rescheduling_interval',
         default: '30',
-        regex: digit
+        regex: seconds
       }, {
         name: 'auto_rescheduling_window',
         default: '180',
-        regex: digit
+        regex: seconds
       }, {
         name: 'use_aggressive_host_checking',
         default: '0',
@@ -323,15 +299,15 @@ class NagiosConfig
       }, {
         name: 'cached_host_check_horizon',
         default: '15',
-        regex: digit
+        regex: seconds
       }, {
         name: 'cached_service_check_horizon',
         default: '15',
-        regex: digit
+        regex: seconds
       }, {
         name: 'use_large_installation_tweaks',
-        default: '15',
-        regex: digit
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'free_child_process_memory',
         default: '1',
@@ -350,222 +326,300 @@ class NagiosConfig
         regex: zero_or_one
       }, {
         name: 'low_service_flap_threshold',
-        default: '',
-        regex: '.*'
+        default: '5.0',
+        regex: percent
       }, {
         name: 'high_service_flap_threshold',
-        default: '',
-        regex: '.*'
+        default: '20.0',
+        regex: percent
       }, {
         name: 'low_host_flap_threshold',
-        default: '',
-        regex: '.*'
+        default: '5.0',
+        regex: percent
       }, {
         name: 'high_host_flap_threshold',
-        default: '',
-        regex: '.*'
+        default: '20.0',
+        regex: percent
       }, {
         name: 'soft_state_dependencies',
-        default: '',
-        regex: '.*'
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'service_check_timeout',
-        default: '',
-        regex: '.*'
+        default: '60',
+        regex: seconds
       }, {
         name: 'service_check_timeout_state',
-        default: '',
-        regex: '.*'
+        default: 'c',
+        regex: '^(c|u|w|o)$'
       }, {
         name: 'host_check_timeout',
-        default: '',
-        regex: '.*'
+        default: '30',
+        regex: seconds
       }, {
         name: 'event_handler_timeout',
-        default: '',
-        regex: '.*'
+        default: '30',
+        regex: seconds
       }, {
         name: 'notification_timeout',
-        default: '',
-        regex: '.*'
+        default: '30',
+        regex: seconds
       }, {
         name: 'ocsp_timeout',
-        default: '',
-        regex: '.*'
+        default: '5',
+        regex: seconds
       }, {
         name: 'ochp_timeout',
-        default: '',
-        regex: '.*'
+        default: '5',
+        regex: seconds
       }, {
         name: 'perfdata_timeout',
-        default: '',
-        regex: '.*'
+        default: '5',
+        regex: seconds
       }, {
         name: 'obsess_over_services',
-        default: '',
-        regex: '.*'
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'ocsp_command',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: string
       }, {
         name: 'obsess_over_hosts',
-        default: '',
-        regex: '.*'
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'ochp_command',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: string
       }, {
         name: 'process_performance_data',
-        default: '',
-        regex: '.*'
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'host_perfdata_command',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: string
       }, {
         name: 'service_perfdata_command',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: string
       }, {
         name: 'host_perfdata_file',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: file
       }, {
         name: 'service_perfdata_file',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: file
       }, {
         name: 'host_perfdata_file_template',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: string
       }, {
         name: 'service_perfdata_file_template',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: string
       }, {
         name: 'host_perfdata_file_mode',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: '^(a|w|p)$'
       }, {
         name: 'service_perfdata_file_mode',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: '^(a|w|p)$'
       }, {
         name: 'host_perfdata_file_processing_interval',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: seconds
       }, {
         name: 'service_perfdata_file_processing_interval',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: seconds
       }, {
         name: 'host_perfdata_file_processing_command',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: string
       }, {
         name: 'service_perfdata_file_processing_command',
-        default: '',
-        regex: '.*'
+        default: nil,
+        regex: string
       }, {
         name: 'check_for_orphaned_services',
-        default: '',
-        regex: '.*'
+        default: '1',
+        regex: zero_or_one
       }, {
         name: 'check_for_orphaned_hosts',
-        default: '',
-        regex: '.*'
+        default: '1',
+        regex: zero_or_one
       }, {
         name: 'check_service_freshness',
-        default: '',
-        regex: '.*'
+        default: '1',
+        regex: zero_or_one
       }, {
         name: 'service_freshness_check_interval',
-        default: '',
-        regex: '.*'
+        default: '60',
+        regex: seconds
       }, {
         name: 'check_host_freshness',
-        default: '',
-        regex: '.*'
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'host_freshness_check_interval',
-        default: '',
-        regex: '.*'
+        default: '60',
+        regex: seconds
       }, {
         name: 'additional_freshness_latency',
-        default: '',
-        regex: '.*'
+        default: '15',
+        regex: seconds
       }, {
         name: 'enable_embedded_perl',
-        default: '',
-        regex: '.*'
+        default: '1',
+        regex: zero_or_one
       }, {
         name: 'use_embedded_perl_implicitly',
-        default: '',
-        regex: '.*'
+        default: '1',
+        regex: zero_or_one
       }, {
         name: 'date_format',
-        default: '',
-        regex: '.*'
+        default: 'iso8601',
+        regex: '^(us|euro|iso8601|strict-iso8601)$'
       }, {
         name: 'use_timezone',
-        default: '',
-        regex: '.*'
+        default: 'UTC',
+        regex: string
       }, {
         name: 'illegal_object_name_chars',
-        default: '',
-        regex: '.*'
+        default: '`~!$%^&*|\'"<>?,()=',
+        regex: string
       }, {
         name: 'illegal_macro_output_chars',
-        default: '',
-        regex: '.*'
+        default: '`~$&|\'"<>#',
+        regex: string
       }, {
         name: 'use_regexp_matching',
-        default: '',
-        regex: '.*'
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'use_true_regexp_matching',
-        default: '',
-        regex: '.*'
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'admin_email',
         default: node['nagios']['sysadmin_email'],
-        regex: '.*',
-        attribute: node['nagios']['sysadmin_email']
+        regex: email
       }, {
         name: 'admin_pager',
-        default: '',
-        regex: '.*'
+        default: node['nagios']['sysadmin_sms_email'],
+        regex: string
       }, {
         name: 'event_broker_options',
-        default: '',
-        regex: '.*'
+        default: '-1',
+        regex: '^(-1|\d*)$'
       }, {
         name: 'broker_module',
-        default: '',
-        regex: '.*'
+        default: [],
+        regex: string
       }, {
         name: 'debug_file',
-        default: '',
-        regex: '.*'
+        default: "#{node['nagios']['state_dir']}/#{node['nagios']['server']['name']}.debug",
+        regex: file
       }, {
         name: 'debug_level',
-        default: '',
-        regex: '.*'
+        default: '0',
+        regex: '^(-1|\d*)$'
       }, {
         name: 'debug_verbosity',
-        default: '',
-        regex: '.*'
+        default: '1',
+        regex: '^(0|1|2)$'
       }, {
         name: 'max_debug_file_size',
-        default: '',
-        regex: '.*'
+        default: '1000000',
+        regex: digit
       }, {
         name: 'allow_empty_hostgroup_assignment',
-        default: '',
-        regex: '.*'
+        default: '1',
+        regex: zero_or_one,
+        only_if: (node['nagios']['server']['install_method'] == 'source' ||
+                    (node['platform_family'] == 'rhel' && node['platform_version'].to_i >= 6) ||
+                    (node['platform'] == 'debian' && node['platform_version'].to_i >= 7) ||
+                    (node['platform'] == 'ubuntu' && node['platform_version'].to_f >= 14.04))
       }
     ]
+  end
+  # rubocop:enable MethodLength
+
+  def digit
+    '^\d*$'
+  end
+
+  def directory
+    # Nothing special to check, so taking same as file
+    file
+  end
+
+  def email
+    # Checking for something with @
+    '^.*@.*$'
+  end
+
+  def file
+    '^(\/)?([^\/\0]+(\/)?)+$'
+  end
+
+  def item_attribute_exists?(name)
+    return true if node['nagios']['conf'].key?(name)
+    false
+  end
+
+  def item_option(item)
+    name = item[:name]
+    return node['nagios']['conf'][name] if item_attribute_exists?(name)
+    item[:default]
+  end
+
+  def item_parse(item)
+    r = item_option(item)
+    case r
+    when String
+      [r]
+    when Array
+      r
+    else
+      []
+    end
+  end
+
+  def item_regex_check(name, value, regex)
+    if Regexp.new(regex).match(value)
+      name + '=' + value
+    else
+      Chef::Log.fail("Nagios error: Wrong config option: #{value} for: #{name}")
+      fail
+    end
+  end
+
+  def minutes
+    # Nothing special to check, so taking any kind of digit
+    digit
+  end
+
+  def percent
+    # Not really the best regex, but will fix later
+    '(?!^0*$)(?!^0*\.0*$)^\d{1,2}(\.\d{1,2})|(100|100\.0|100\.00)?$'
+  end
+
+  def seconds
+    # Nothing special to check, so taking any kind of digit
+    digit
+  end
+
+  def string
+    '.*'
+  end
+
+  def zero_or_one
+    # Check for 0 or 1
+    '^[1|0]$'
   end
 end
