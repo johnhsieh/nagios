@@ -307,11 +307,11 @@ class NagiosConfig
         regex: zero_or_one
       }, {
         name: 'free_child_process_memory',
-        default: '1',
+        default: nil,
         regex: zero_or_one
       }, {
         name: 'child_processes_fork_twice',
-        default: '1',
+        default: nil,
         regex: zero_or_one
       }, {
         name: 'enable_environment_macros',
@@ -398,15 +398,7 @@ class NagiosConfig
         default: nil,
         regex: string
       }, {
-        name: 'service_perfdata_command',
-        default: nil,
-        regex: string
-      }, {
         name: 'host_perfdata_file',
-        default: nil,
-        regex: file
-      }, {
-        name: 'service_perfdata_file',
         default: nil,
         regex: file
       }, {
@@ -414,15 +406,7 @@ class NagiosConfig
         default: nil,
         regex: string
       }, {
-        name: 'service_perfdata_file_template',
-        default: nil,
-        regex: string
-      }, {
         name: 'host_perfdata_file_mode',
-        default: nil,
-        regex: '^(a|w|p)$'
-      }, {
-        name: 'service_perfdata_file_mode',
         default: nil,
         regex: '^(a|w|p)$'
       }, {
@@ -430,13 +414,29 @@ class NagiosConfig
         default: nil,
         regex: seconds
       }, {
-        name: 'service_perfdata_file_processing_interval',
-        default: nil,
-        regex: seconds
-      }, {
         name: 'host_perfdata_file_processing_command',
         default: nil,
         regex: string
+      }, {
+        name: 'service_perfdata_command',
+        default: nil,
+        regex: string
+      }, {
+        name: 'service_perfdata_file',
+        default: nil,
+        regex: file
+      }, {
+        name: 'service_perfdata_file_template',
+        default: nil,
+        regex: string
+      }, {
+        name: 'service_perfdata_file_mode',
+        default: nil,
+        regex: '^(a|w|p)$'
+      }, {
+        name: 'service_perfdata_file_processing_interval',
+        default: nil,
+        regex: seconds
       }, {
         name: 'service_perfdata_file_processing_command',
         default: nil,
@@ -486,6 +486,10 @@ class NagiosConfig
         default: 'UTC',
         regex: string
       }, {
+        name: 'p1_file',
+        default: nil,
+        regex: file
+      }, {
         name: 'illegal_object_name_chars',
         default: '`~!$%^&*|\'"<>?,()=',
         regex: string
@@ -517,6 +521,34 @@ class NagiosConfig
         name: 'broker_module',
         default: [],
         regex: string
+      }, {
+        name: 'retained_host_attribute_mask',
+        default: '0',
+        regex: zero_or_one
+      }, {
+        name: 'retained_service_attribute_mask',
+        default: '0',
+        regex: zero_or_one
+      }, {
+        name: 'retained_process_host_attribute_mask',
+        default: '0',
+        regex: zero_or_one
+      }, {
+        name: 'retained_process_service_attribute_mask',
+        default: '0',
+        regex: zero_or_one
+      }, {
+        name: 'retained_contact_host_attribute_mask',
+        default: '0',
+        regex: zero_or_one
+      }, {
+        name: 'retained_contact_service_attribute_mask',
+        default: '0',
+        regex: zero_or_one
+      }, {
+        name: 'daemon_dumps_core',
+        default: '0',
+        regex: zero_or_one
       }, {
         name: 'debug_file',
         default: "#{node['nagios']['state_dir']}/#{node['nagios']['server']['name']}.debug",
