@@ -35,11 +35,8 @@ class NagiosConfig
   def config
     result = []
     config_options.each do |item|
-      name = item[:name]
-      regex = item[:regex]
-      item_parse(item).each do |value|
-        result.push(item_regex_check(name, value, regex))
-      end
+      name, regex = item[:name], item[:regex]
+      item_parse(item).each { |value| result.push(item_regex_check(name, value, regex)) }
     end
     result
   end
@@ -572,6 +569,10 @@ class NagiosConfig
     false
   end
 
+  def item_only_if(item)
+    item.key?(:only_if) ? item[:only_if] : true
+  end
+
   def item_option(item)
     name = item[:name]
     return node['nagios']['conf'][name] if item_attribute_exists?(name)
@@ -579,6 +580,7 @@ class NagiosConfig
   end
 
   def item_parse(item)
+    return [] unless item_only_if(item)
     r = item_option(item)
     case r
     when String
