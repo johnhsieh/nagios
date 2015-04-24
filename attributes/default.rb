@@ -205,12 +205,13 @@ default['nagios']['default_service']['notification_interval'] = 1200
 default['nagios']['default_service']['flap_detection']        = true
 default['nagios']['default_service']['action_url']            = nil
 
-default['nagios']['server']['web_server']          = 'apache'
-default['nagios']['server']['nginx_dispatch']      = 'cgi'
-default['nagios']['server']['stop_apache']         = false
-default['nagios']['server']['normalize_hostname']  = false
-default['nagios']['server']['load_default_config'] = true
-default['nagios']['server']['load_databag_config'] = true
+default['nagios']['server']['web_server']              = 'apache'
+default['nagios']['server']['nginx_dispatch']          = 'cgi'
+default['nagios']['server']['stop_apache']             = false
+default['nagios']['server']['normalize_hostname']      = false
+default['nagios']['server']['load_default_config']     = true
+default['nagios']['server']['load_databag_config']     = true
+default['nagios']['server']['use_encrypted_data_bags'] = false
 
 default['nagios']['conf']['max_service_check_spread'] = 5
 default['nagios']['conf']['max_host_check_spread']    = 5
